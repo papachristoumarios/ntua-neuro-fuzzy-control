@@ -11,14 +11,6 @@ B = [0; 0; 1];
 % Sampling Period
 Ts = 1;
 
-
-% Choose a random gain L such that A - BL is stable
-L = randn(size(B'));
-while max(abs(A - B * L)) >= 1
-    L = randn(size(B'));
-end
-
-
 % Choose initial condition
 x0 = 0.1 * ones(length(A), 1);
 
@@ -29,13 +21,21 @@ Q = eye(size(A));
 % Number of iterations
 Niter = 200;
 time = 0 : Niter;
-epochs = 1;
+epochs = 100;
 
 %% Q Learning
+
 for ep = 1 : epochs
+    L = randn(size(B'));
     [H, K] = q_learning(A, B, L, Q, rho, Niter, x0);
-    L = K;
+    % Suppose we put this controller and simulate the model
+    % if it is stable, we are good to go
+    if max(abs(eig(A - B * K))) < 1
+        break
+    end
 end
+
+
     
 %% Ideal LQR
 [Kid, Pid, e] = dlqr(A, B, Q, rho);
@@ -59,6 +59,17 @@ ylabel('State vector')
 
 hold off
 
+hold off
+
+figure;
+hold on
+stem(time, - Kid * x_id');
+title('Input of Ideal System')
+xlabel('Samples')
+
+hold off
+
+
 %% Q-Learned LQR
 
 Aq_c = A - B * K;
@@ -80,6 +91,42 @@ ylabel('State vector')
 
 hold off
 
-%% Compare MMSE
-MSE = mean(std(x_q - x_id));
-display(sprintf('MMSE between state vectors: %f', MSE));
+figure;
+hold on
+stem(time, - K * x_q');
+title('Input of Q-Learned System')
+xlabel('Samples')
+
+hold off
+
+%% Behaviour due to random gain 
+
+Aq_r = A - B * L;
+
+q_learning_model = ss(Aq_r, B, zeros(size(A)), zeros(size(B)), Ts);
+
+[~, ~, x_r] = lsim(q_learning_model, zeros(1, Niter + 1), time, x0);
+
+
+figure;
+hold on;
+for i = 1 : length(x0)
+    stem(time, x_r(:, i), 'color', rand(1,3));
+end
+title('Impulse responses for random Gain Matrix')
+legend('x1', 'x2', 'x3')
+xlabel('Samples')
+ylabel('State vector')
+
+hold off
+
+hold off
+
+figure;
+hold on
+stem(time, - L * x_r');
+title('Input of System under random Gain')
+xlabel('Samples')
+
+hold off
+
