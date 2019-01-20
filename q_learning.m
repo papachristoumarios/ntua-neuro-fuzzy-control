@@ -1,29 +1,32 @@
-function [ H, K ] = q_learning(A, B, K, Q, rho, Niter, x0)
+function [ H, K_opt ] = q_learning(A, B, K, Q, rho, Niter, Hprev, x0, u_samples)
    
     % Initialize variables
+   
     x = x0;
-    u = -K * x;
+    
     Y = [];
     X = [];
-   
+    
+    % Policy Iteration
     for n = 1 : Niter
-        
+        u = u_samples(:, n);
         % Calculate quadratic combinations
-        phi = quad_comb(x, u);
+        phi = kron([x; u], [x; u])';
+        
+        % Calculate reward function
         r = x' * Q * x + u' * rho * u;
 
-        % update x_k+1 u_k + 1
+        % Forward pass to the model
         x = A * x + B * u;
-        u = -K * x;
-
-        % Calculate new quadratic combinations
-        phi_new = quad_comb(x, u);
+        t = [x; K * x];
         
-        % Calculate entry
-        dphi = phi' - phi_new';
+        % Calculate new quadratic combinations
+        
+        
+        r = r + t' * Hprev * t;
         
         % Append to matrices
-        X = [X; dphi];
+        X = [X; phi];
         Y = [Y; r];
         
     end
@@ -38,8 +41,8 @@ function [ H, K ] = q_learning(A, B, K, Q, rho, Niter, x0)
     Hux = H(length(x) + 1 : end, 1:length(x));
     Huu = H(length(x) + 1 : end, length(x) + 1 : end);
     
-    % Find optimal value of gain
-    K = inv(Huu) * Hux;
+    % Policy Improvement - Find optimal value of gain
+    K_opt = inv(Huu) * Hux;
     
 end
 
