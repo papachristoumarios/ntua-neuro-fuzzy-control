@@ -20,14 +20,12 @@ function [ H, K_opt ] = q_learning(A, B, K, Q, rho, Niter, Hprev, x0, u_samples)
         x = A * x + B * u;
         t = [x; K * x];
         
-        % Calculate new quadratic combinations
-        
-        
-        r = r + t' * Hprev * t;
+                
+        d = r + t' * Hprev * t;
         
         % Append to matrices
         X = [X; phi];
-        Y = [Y; r];
+        Y = [Y; d];
         
     end
     
@@ -42,7 +40,7 @@ function [ H, K_opt ] = q_learning(A, B, K, Q, rho, Niter, Hprev, x0, u_samples)
     Huu = H(length(x) + 1 : end, length(x) + 1 : end);
     
     % Policy Improvement - Find optimal value of gain
-    K_opt = inv(Huu) * Hux;
+    K_opt = -inv(Huu) * Hux;
     
 end
 

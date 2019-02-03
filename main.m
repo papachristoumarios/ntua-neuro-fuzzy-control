@@ -135,9 +135,3 @@ title('Input of Ideal System')
 xlabel('Samples')
 
 hold off
-
-
-
-
-
-
